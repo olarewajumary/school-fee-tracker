@@ -7,9 +7,7 @@ type HealthResponse = {
 };
 
 type ApiState =
-  | { kind: "loading" }
-  | { kind: "online"; data: HealthResponse }
-  | { kind: "offline" };
+  { kind: "loading" } | { kind: "online"; data: HealthResponse } | { kind: "offline" };
 
 const STATUS_STYLES: Record<ApiState["kind"], string> = {
   loading: "bg-slate-100 text-slate-700",
