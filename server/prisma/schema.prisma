@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  PARENT
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  CHECK
+  OTHER
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  classesTaught    SchoolClass[]
+  children         Student[]
+  paymentsRecorded Payment[]
+
+  @@map("users")
+}
+
+model SchoolClass {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  teacherId String?  @map("teacher_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  teacher       User?          @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  students      Student[]
+  feeStructures FeeStructure[]
+
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model Term {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  feeStructures FeeStructure[]
+  payments      Payment[]
+
+  @@map("terms")
+}
+
+model FeeStructure {
+  id          String   @id @default(uuid()) @db.Uuid
+  classId     String   @map("class_id") @db.Uuid
+  termId      String   @map("term_id") @db.Uuid
+  name        String
+  amountCents Int      @map("amount_cents")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  schoolClass SchoolClass @relation(fields: [classId], references: [id], onDelete: Restrict)
+  term        Term        @relation(fields: [termId], references: [id], onDelete: Restrict)
+
+  @@unique([classId, termId, name])
+  @@index([termId])
+  @@map("fee_structures")
+}
+
+model Student {
+  id            String   @id @default(uuid()) @db.Uuid
+  studentNumber String   @unique @map("student_number")
+  firstName     String   @map("first_name")
+  lastName      String   @map("last_name")
+  classId       String   @map("class_id") @db.Uuid
+  parentId      String?  @map("parent_id") @db.Uuid
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  schoolClass SchoolClass @relation(fields: [classId], references: [id], onDelete: Restrict)
+  parent      User?       @relation(fields: [parentId], references: [id], onDelete: SetNull)
+  payments    Payment[]
+
+  @@index([classId])
+  @@index([parentId])
+  @@map("students")
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  receiptNumber  Int           @unique @default(autoincrement()) @map("receipt_number")
+  studentId      String        @map("student_id") @db.Uuid
+  termId         String        @map("term_id") @db.Uuid
+  amountCents    Int           @map("amount_cents")
+  method         PaymentMethod
+  reference      String?
+  note           String?
+  paidAt         DateTime      @default(now()) @map("paid_at")
+  recordedById   String        @map("recorded_by_id") @db.Uuid
+  idempotencyKey String?       @unique @map("idempotency_key")
+  voidedAt       DateTime?     @map("voided_at")
+  voidReason     String?       @map("void_reason")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  term       Term    @relation(fields: [termId], references: [id], onDelete: Restrict)
+  recordedBy User    @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+
+  @@index([studentId, termId])
+  @@index([paidAt])
+  @@map("payments")
+}
