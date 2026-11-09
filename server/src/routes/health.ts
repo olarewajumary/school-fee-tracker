@@ -5,7 +5,7 @@ export type DatabaseCheck = () => Promise<void>;
 
 // Neon's free tier can take a few seconds to wake up, so the limit is generous.
 // Without any limit, a hung connection would make the readiness probe hang too.
-const DB_CHECK_TIMEOUT_MS = 5000;
+const DB_CHECK_TIMEOUT_MS = 10000;
 
 export const checkDatabase: DatabaseCheck = async () => {
   let timer: NodeJS.Timeout | undefined;
