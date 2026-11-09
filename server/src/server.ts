@@ -1,9 +1,9 @@
 import { createApp } from "./app";
-
-const PORT = Number(process.env.PORT) || 4000;
+import { config } from "./config";
+import { logger } from "./lib/logger";
 
 const app = createApp();
 
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
+app.listen(config.PORT, () => {
+  logger.info({ port: config.PORT, env: config.NODE_ENV }, "API listening");
 });
